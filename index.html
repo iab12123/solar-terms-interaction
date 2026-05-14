@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>二十四节气总览实验</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --ink: #f2f2ee;
+        --muted: rgba(242, 242, 238, 0.62);
+        --line: rgba(242, 242, 238, 0.2);
+        --accent: #9be7d2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      .page {
+        position: relative;
+        width: 100vw;
+        height: 100svh;
+        background: #020202;
+      }
+
+      .topbar {
+        position: fixed;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 54px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(2, 2, 2, 0.88), rgba(2, 2, 2, 0));
+        pointer-events: none;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0;
+      }
+
+      .status {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+      }
+
+      .artboard {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 54px 0 34px;
+      }
+
+      .overview-frame {
+        width: min(100vw, calc(100svh * 0.4801));
+        height: min(100svh, calc(100vw / 0.4801));
+      }
+
+      .overview-frame svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .bottombar {
+        position: fixed;
+        z-index: 2;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        padding: 10px 14px 14px;
+        color: var(--muted);
+        font-size: 12px;
+        background: linear-gradient(0deg, rgba(2, 2, 2, 0.86), rgba(2, 2, 2, 0));
+        pointer-events: none;
+      }
+
+      @media (max-width: 520px) {
+        .topbar {
+          min-height: 48px;
+          padding: 12px 14px;
+        }
+
+        .title,
+        .status,
+        .bottombar {
+          font-size: 11px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="二十四节气总览">
+      <header class="topbar">
+        <h1 class="title">二十四节气总览</h1>
+        <p class="status" id="status">点击「立春」进入交互</p>
+      </header>
+
+      <section class="artboard">
+        <div class="overview-frame" id="overview" aria-label="节气总览图"></div>
+      </section>
+
+      <footer class="bottombar">当前实验版：立春已接入，其他节气保留入口位置</footer>
+    </main>
+
+    <script>
+      const seasons = [
+        { id: "立春", href: "lichun.html" },
+        { id: "立夏" },
+        { id: "立秋" },
+        { id: "立冬" },
+        { id: "春分" },
+        { id: "夏至" },
+        { id: "秋分" },
+        { id: "冬至" },
+      ];
+
+      const status = document.querySelector("#status");
+      const overview = document.querySelector("#overview");
+
+      function setStatus(text) {
+        status.textContent = text;
+      }
+
+      function buildHitArea(svg, season) {
+        const group = svg.getElementById(season.id);
+        if (!group) return;
+
+        group.style.transition = "opacity 160ms ease, filter 160ms ease";
+
+        const box = group.getBBox();
+        const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        hit.setAttribute("x", String(box.x - 24));
+        hit.setAttribute("y", String(box.y - 24));
+        hit.setAttribute("width", String(box.width + 48));
+        hit.setAttribute("height", String(box.height + 48));
+        hit.setAttribute("fill", "#ffffff");
+        hit.setAttribute("opacity", "0");
+        hit.setAttribute("role", "link");
+        hit.setAttribute("tabindex", "0");
+        hit.setAttribute("aria-label", season.href ? `进入${season.id}` : `${season.id}待接入`);
+        hit.style.cursor = "pointer";
+        hit.style.pointerEvents = "all";
+
+        const enter = () => {
+          hit.setAttribute("opacity", season.href ? "0.08" : "0.035");
+          group.style.filter = season.href
+            ? "drop-shadow(0 0 8px rgba(155, 231, 210, 0.8))"
+            : "drop-shadow(0 0 5px rgba(255, 255, 255, 0.42))";
+          setStatus(season.href ? `点击进入「${season.id}」` : `「${season.id}」入口待接入`);
+        };
+
+        const leave = () => {
+          hit.setAttribute("opacity", "0");
+          group.style.filter = "none";
+          setStatus("点击「立春」进入交互");
+        };
+
+        const open = () => {
+          if (season.href) {
+            window.location.href = season.href;
+          } else {
+            setStatus(`「${season.id}」之后可以接入对应交互`);
+          }
+        };
+
+        hit.addEventListener("pointerenter", enter);
+        hit.addEventListener("pointerleave", leave);
+        hit.addEventListener("click", open);
+        hit.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
+        });
+
+        svg.appendChild(hit);
+      }
+
+      async function loadOverview() {
+        try {
+          const response = await fetch("assets/overview.svg");
+          overview.innerHTML = await response.text();
+          const svg = overview.querySelector("svg");
+          if (!svg) {
+            setStatus("SVG 暂时无法加载");
+            return;
+          }
+
+          svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          seasons.forEach((season) => buildHitArea(svg, season));
+        } catch (error) {
+          setStatus("SVG 暂时无法加载");
+        }
+      }
+
+      loadOverview();
+    </script>
+  </body>
+</html>

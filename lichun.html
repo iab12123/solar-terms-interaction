@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>立春交互</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #ffffff;
+        --panel: rgba(0, 0, 0, 0.18);
+        --line: rgba(255, 255, 255, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        overflow: hidden;
+        background: #0f2d14;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      .page {
+        position: relative;
+        width: 100vw;
+        height: 100svh;
+        display: grid;
+        place-items: center;
+        touch-action: none;
+      }
+
+      canvas {
+        display: block;
+        width: min(100vw, calc(100svh * 0.4719));
+        height: min(100svh, calc(100vw / 0.4719));
+      }
+
+      .back,
+      .motion {
+        position: fixed;
+        z-index: 2;
+        top: 16px;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+      }
+
+      .back {
+        left: 16px;
+        display: inline-grid;
+        place-items: center;
+        width: 42px;
+        border-radius: 50%;
+        text-decoration: none;
+      }
+
+      .back svg {
+        width: 19px;
+        height: 19px;
+      }
+
+      .motion {
+        right: 16px;
+        padding: 0 14px;
+        border-radius: 999px;
+        font: inherit;
+        font-size: 12px;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .motion {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" id="stage" aria-label="立春交互">
+      <a class="back" href="index.html" aria-label="返回总览">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+      <button class="motion" id="motion" type="button">启用倾斜</button>
+      <canvas id="canvas" width="470" height="996"></canvas>
+    </main>
+
+    <script>
+      const sketchWidth = 470;
+      const sketchHeight = 996;
+      const lightGreen = [200, 255, 180];
+      const darkGreen = [15, 45, 20];
+
+      const canvas = document.querySelector("#canvas");
+      const ctx = canvas.getContext("2d");
+      const stage = document.querySelector("#stage");
+      const motionButton = document.querySelector("#motion");
+
+      let pointerX = sketchWidth / 2;
+      let pointerY = sketchHeight / 2;
+      let targetX = pointerX;
+      let targetY = pointerY;
+
+      const strokes = [];
+
+      function add(...points) {
+        strokes.push({
+          ox1: points[0],
+          oy1: points[1],
+          ox2: points[2],
+          oy2: points[3],
+          ux1: points[4],
+          uy1: points[5],
+          ux2: points[6],
+          uy2: points[7],
+          dx1: points[8],
+          dy1: points[9],
+          dx2: points[10],
+          dy2: points[11],
+          lx1: points[12],
+          ly1: points[13],
+          lx2: points[14],
+          ly2: points[15],
+          rx1: points[16],
+          ry1: points[17],
+          rx2: points[18],
+          ry2: points[19],
+        });
+      }
+
+      // 立
+      add(35, 293, 175, 293, 35, 130, 175, 130, 35, 875, 175, 875, 35, 535, 175, 535, 35, 535, 175, 535);
+      add(105, 270, 105, 293, 105, 120, 105, 130, 105, 870, 105, 875, 45, 490, 45, 535, 175, 510, 175, 535);
+      add(67, 293, 67, 420, 67, 130, 67, 135, 67, 875, 67, 885, 45, 490, 45, 640, 160, 510, 160, 640);
+      add(147, 293, 147, 420, 147, 130, 147, 135, 147, 875, 147, 885, 60, 490, 60, 640, 175, 510, 175, 640);
+      add(35, 420, 175, 420, 35, 135, 175, 135, 35, 885, 175, 885, 35, 640, 175, 640, 35, 640, 175, 640);
+
+      // 春
+      add(200, 290, 435, 290, 200, 130, 435, 130, 200, 780, 435, 780, 200, 290, 435, 290, 200, 290, 435, 290);
+      add(200, 306, 435, 306, 200, 133, 435, 133, 200, 790, 435, 790, 200, 306, 435, 306, 200, 306, 435, 306);
+      add(200, 322, 435, 322, 200, 136, 435, 136, 200, 800, 435, 800, 200, 322, 435, 322, 200, 322, 435, 322);
+      add(200, 338, 435, 338, 200, 139, 435, 139, 200, 810, 435, 810, 200, 338, 435, 338, 200, 338, 435, 338);
+      add(317, 280, 317, 338, 268, 120, 268, 139, 268, 280, 268, 810, 217, 280, 217, 338, 417, 280, 417, 338);
+      add(200, 338, 200, 810, 200, 139, 200, 810, 200, 810, 200, 885, 200, 338, 200, 810, 200, 338, 200, 810);
+      add(435, 338, 435, 810, 435, 139, 435, 810, 435, 810, 435, 885, 435, 338, 435, 810, 435, 338, 435, 810);
+      add(225, 350, 405, 350, 230, 142, 410, 142, 230, 820, 410, 820, 215, 350, 395, 350, 245, 350, 425, 350);
+      add(225, 430, 405, 430, 230, 152, 410, 152, 230, 885, 410, 885, 215, 620, 395, 620, 245, 620, 425, 620);
+      add(225, 350, 225, 430, 230, 142, 230, 152, 230, 820, 230, 885, 215, 548, 215, 620, 245, 548, 245, 620);
+      add(405, 350, 405, 430, 410, 142, 410, 152, 410, 820, 410, 885, 395, 548, 395, 620, 425, 548, 425, 620);
+      add(225, 390, 405, 390, 230, 147, 410, 147, 230, 875, 410, 875, 215, 584, 395, 584, 245, 584, 425, 584);
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function map(value, start1, stop1, start2, stop2) {
+        return start2 + ((stop2 - start2) * (value - start1)) / (stop1 - start1);
+      }
+
+      function lerp(start, stop, amount) {
+        return start + (stop - start) * amount;
+      }
+
+      function lerpColor(a, b, amount) {
+        return a.map((value, index) => Math.round(lerp(value, b[index], amount)));
+      }
+
+      function setPointerFromClient(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        targetX = clamp(((clientX - rect.left) / rect.width) * sketchWidth, 0, sketchWidth - 1);
+        targetY = clamp(((clientY - rect.top) / rect.height) * sketchHeight, 0, sketchHeight - 1);
+      }
+
+      function drawStroke(stroke, upAmount, downAmount, leftAmount, rightAmount) {
+        let x1 = stroke.ox1;
+        let y1 = stroke.oy1;
+        let x2 = stroke.ox2;
+        let y2 = stroke.oy2;
+
+        if (upAmount > 0) {
+          y1 = lerp(stroke.oy1, stroke.uy1, upAmount);
+          y2 = lerp(stroke.oy2, stroke.uy2, upAmount);
+        }
+
+        if (downAmount > 0) {
+          y1 = lerp(stroke.oy1, stroke.dy1, downAmount);
+          y2 = lerp(stroke.oy2, stroke.dy2, downAmount);
+        }
+
+        if (leftAmount > 0) {
+          x1 = lerp(stroke.ox1, stroke.lx1, leftAmount);
+          x2 = lerp(stroke.ox2, stroke.lx2, leftAmount);
+        }
+
+        if (rightAmount > 0) {
+          x1 = lerp(stroke.ox1, stroke.rx1, rightAmount);
+          x2 = lerp(stroke.ox2, stroke.rx2, rightAmount);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      function draw() {
+        pointerX = lerp(pointerX, targetX, 0.18);
+        pointerY = lerp(pointerY, targetY, 0.18);
+
+        const bgAmount = clamp(map(pointerY, 0, sketchHeight, 0, 1), 0, 1);
+        const [r, g, b] = lerpColor(lightGreen, darkGreen, bgAmount);
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(0, 0, sketchWidth, sketchHeight);
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineCap = "butt";
+        ctx.lineJoin = "miter";
+        ctx.lineWidth = clamp(map(pointerY, 0, sketchHeight, 1, 20), 1, 20);
+
+        const centerX = sketchWidth / 2;
+        const centerY = sketchHeight / 2;
+        const upAmount = pointerY < centerY ? clamp(map(pointerY, centerY, 0, 0, 1), 0, 1) : 0;
+        const downAmount = pointerY > centerY ? clamp(map(pointerY, centerY, sketchHeight - 1, 0, 1), 0, 1) : 0;
+        const leftAmount = pointerX < centerX ? clamp(map(pointerX, centerX, 0, 0, 1), 0, 1) : 0;
+        const rightAmount = pointerX > centerX ? clamp(map(pointerX, centerX, sketchWidth - 1, 0, 1), 0, 1) : 0;
+
+        strokes.forEach((stroke) => drawStroke(stroke, upAmount, downAmount, leftAmount, rightAmount));
+        requestAnimationFrame(draw);
+      }
+
+      function handleDeviceOrientation(event) {
+        const gamma = clamp(event.gamma || 0, -35, 35);
+        const beta = clamp(event.beta || 0, -30, 60);
+        targetX = map(gamma, -35, 35, 0, sketchWidth - 1);
+        targetY = map(beta, -30, 60, 0, sketchHeight - 1);
+      }
+
+      async function enableMotion() {
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission !== "granted") return;
+        }
+
+        window.addEventListener("deviceorientation", handleDeviceOrientation, true);
+        motionButton.textContent = "倾斜已启用";
+      }
+
+      stage.addEventListener("pointermove", (event) => setPointerFromClient(event.clientX, event.clientY));
+      stage.addEventListener("pointerdown", (event) => setPointerFromClient(event.clientX, event.clientY));
+      motionButton.addEventListener("click", enableMotion);
+
+      draw();
+    </script>
+  </body>
+</html>
