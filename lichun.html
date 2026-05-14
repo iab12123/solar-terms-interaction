@@ -42,7 +42,7 @@
       }
 
       .back,
-      .motion {
+      .gyro-button {
         position: fixed;
         z-index: 2;
         top: 16px;
@@ -67,18 +67,12 @@
         height: 19px;
       }
 
-      .motion {
+      .gyro-button {
         right: 16px;
         padding: 0 14px;
         border-radius: 999px;
         font: inherit;
         font-size: 12px;
-      }
-
-      @media (hover: hover) and (pointer: fine) {
-        .motion {
-          display: none;
-        }
       }
     </style>
   </head>
@@ -89,7 +83,7 @@
           <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </a>
-      <button class="motion" id="motion" type="button">启用倾斜</button>
+      <button class="gyro-button" id="gyroButton" type="button">启用陀螺仪</button>
       <canvas id="canvas" width="470" height="996"></canvas>
     </main>
 
@@ -102,12 +96,14 @@
       const canvas = document.querySelector("#canvas");
       const ctx = canvas.getContext("2d");
       const stage = document.querySelector("#stage");
-      const motionButton = document.querySelector("#motion");
+      const gyroButton = document.querySelector("#gyroButton");
 
       let pointerX = sketchWidth / 2;
       let pointerY = sketchHeight / 2;
       let targetX = pointerX;
       let targetY = pointerY;
+      let gyroBaseGamma = null;
+      let gyroBaseBeta = null;
 
       const strokes = [];
 
@@ -212,8 +208,8 @@
       }
 
       function draw() {
-        pointerX = lerp(pointerX, targetX, 0.18);
-        pointerY = lerp(pointerY, targetY, 0.18);
+        pointerX = targetX;
+        pointerY = targetY;
 
         const bgAmount = clamp(map(pointerY, 0, sketchHeight, 0, 1), 0, 1);
         const [r, g, b] = lerpColor(lightGreen, darkGreen, bgAmount);
@@ -221,7 +217,7 @@
         ctx.fillRect(0, 0, sketchWidth, sketchHeight);
 
         ctx.strokeStyle = "#ffffff";
-        ctx.lineCap = "butt";
+        ctx.lineCap = "square";
         ctx.lineJoin = "miter";
         ctx.lineWidth = clamp(map(pointerY, 0, sketchHeight, 1, 20), 1, 20);
 
@@ -237,28 +233,50 @@
       }
 
       function handleDeviceOrientation(event) {
-        const gamma = clamp(event.gamma || 0, -35, 35);
-        const beta = clamp(event.beta || 0, -30, 60);
-        targetX = map(gamma, -35, 35, 0, sketchWidth - 1);
-        targetY = map(beta, -30, 60, 0, sketchHeight - 1);
+        const gamma = event.gamma || 0;
+        const beta = event.beta || 0;
+
+        if (gyroBaseGamma === null || gyroBaseBeta === null) {
+          gyroBaseGamma = gamma;
+          gyroBaseBeta = beta;
+          targetX = sketchWidth / 2;
+          targetY = sketchHeight / 2;
+          return;
+        }
+
+        const deltaGamma = clamp(gamma - gyroBaseGamma, -28, 28);
+        const deltaBeta = clamp(beta - gyroBaseBeta, -28, 28);
+        targetX = map(deltaGamma, -28, 28, 0, sketchWidth - 1);
+        targetY = map(deltaBeta, -28, 28, 0, sketchHeight - 1);
       }
 
       async function enableMotion() {
+        if (typeof DeviceOrientationEvent === "undefined") {
+          gyroButton.textContent = "当前设备不支持";
+          return;
+        }
+
         if (
-          typeof DeviceOrientationEvent !== "undefined" &&
           typeof DeviceOrientationEvent.requestPermission === "function"
         ) {
           const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission !== "granted") return;
+          if (permission !== "granted") {
+            gyroButton.textContent = "未授权";
+            return;
+          }
         }
 
+        gyroBaseGamma = null;
+        gyroBaseBeta = null;
+        targetX = sketchWidth / 2;
+        targetY = sketchHeight / 2;
         window.addEventListener("deviceorientation", handleDeviceOrientation, true);
-        motionButton.textContent = "倾斜已启用";
+        gyroButton.textContent = "陀螺仪已启用";
       }
 
       stage.addEventListener("pointermove", (event) => setPointerFromClient(event.clientX, event.clientY));
       stage.addEventListener("pointerdown", (event) => setPointerFromClient(event.clientX, event.clientY));
-      motionButton.addEventListener("click", enableMotion);
+      gyroButton.addEventListener("click", enableMotion);
 
       draw();
     </script>
