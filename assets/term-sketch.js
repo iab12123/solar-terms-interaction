@@ -4,7 +4,7 @@
   const term = terms[key];
 
   if (!term) {
-    throw new Error(`Missing term data: ${key}`);
+    throw new Error('Missing term data: ' + key);
   }
 
   const canvas = document.querySelector('#canvas');
@@ -16,7 +16,7 @@
   canvas.width = term.width;
   canvas.height = term.height;
   title.textContent = term.label;
-  document.title = `${term.label}交互`;
+  document.title = term.label + '交互';
 
   let pointerX = term.width / 2;
   let pointerY = term.height / 2;
@@ -85,8 +85,8 @@
     pointerY = targetY;
 
     const bgAmount = clamp(map(pointerY, 0, term.height, 0, 1), 0, 1);
-    const [r, g, b] = lerpColor(term.light, term.dark, bgAmount);
-    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    const color = lerpColor(term.light, term.dark, bgAmount);
+    ctx.fillStyle = 'rgb(' + color[0] + ', ' + color[1] + ', ' + color[2] + ')';
     ctx.fillRect(0, 0, term.width, term.height);
 
     ctx.strokeStyle = '#ffffff';
