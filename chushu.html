@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>处暑交互</title>
     <style>
       :root {
@@ -13,6 +13,13 @@
       }
 
       * { box-sizing: border-box; }
+
+      html,
+      body,
+      .page,
+      canvas {
+        cursor: url("assets/cursors/hand-cursor.png") 25 3, pointer;
+      }
 
       html,
       body {
@@ -28,6 +35,7 @@
         position: relative;
         width: 100vw;
         height: 100svh;
+        min-height: 100dvh;
         display: grid;
         place-items: center;
         touch-action: none;
@@ -63,6 +71,11 @@
 
       .back svg { width: 19px; height: 19px; }
 
+      .back,
+      .gyro-button {
+        cursor: url("assets/cursors/hand-cursor.png") 25 3, pointer;
+      }
+
       .term-title {
         left: 50%;
         display: grid;
@@ -82,6 +95,24 @@
         border-radius: 999px;
         font: inherit;
         font-size: 12px;
+      }
+
+      @media (max-width: 700px) {
+        html,
+        body {
+          width: 100%;
+          height: 100%;
+        }
+
+        .page {
+          height: 100dvh;
+          min-height: 100dvh;
+        }
+
+        canvas {
+          width: 100vw;
+          height: 100dvh;
+        }
       }
     </style>
   </head>

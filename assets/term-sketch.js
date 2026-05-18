@@ -12,11 +12,24 @@
   const stage = document.querySelector('#stage');
   const gyroButton = document.querySelector('#gyroButton');
   const title = document.querySelector('#termTitle');
+  const audioSources = {
+    lixia: 'assets/sounds/relaxing-rain.mp3',
+    xiazhi: 'assets/sounds/relaxing-rain.mp3',
+    xiaoshu: 'assets/sounds/relaxing-rain.mp3',
+    dashu: 'assets/sounds/relaxing-rain.mp3',
+  };
+  const audioSource = audioSources[key];
+  const audio = audioSource ? new Audio(audioSource) : null;
 
   canvas.width = term.width;
   canvas.height = term.height;
   title.textContent = term.label;
   document.title = term.label + '交互';
+  if (audio) {
+    audio.loop = true;
+    audio.preload = 'auto';
+    gyroButton.textContent = '启用陀螺仪与声音';
+  }
 
   let pointerX = term.width / 2;
   let pointerY = term.height / 2;
@@ -24,6 +37,7 @@
   let targetY = pointerY;
   let gyroBaseGamma = null;
   let gyroBaseBeta = null;
+  let audioEnabled = false;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -39,6 +53,15 @@
 
   function lerpColor(a, b, amount) {
     return a.map((value, index) => Math.round(lerp(value, b[index], amount)));
+  }
+
+  function getAudioVolume() {
+    return clamp(map(pointerY, 0, term.height, 0, 1), 0, 1);
+  }
+
+  function updateAudioVolume() {
+    if (!audio || !audioEnabled) return;
+    audio.volume = getAudioVolume();
   }
 
   function setPointerFromClient(clientX, clientY) {
@@ -88,6 +111,7 @@
     const color = lerpColor(term.light, term.dark, bgAmount);
     ctx.fillStyle = 'rgb(' + color[0] + ', ' + color[1] + ', ' + color[2] + ')';
     ctx.fillRect(0, 0, term.width, term.height);
+    updateAudioVolume();
 
     ctx.strokeStyle = '#ffffff';
     ctx.lineCap = 'square';
@@ -123,16 +147,32 @@
     targetY = map(deltaBeta, -28, 28, 0, term.height - 1);
   }
 
-  async function enableGyro() {
+  async function enableAudio() {
+    if (!audio) return false;
+
+    try {
+      audio.volume = getAudioVolume();
+      await audio.play();
+      audioEnabled = true;
+      return true;
+    } catch (error) {
+      gyroButton.textContent = '声音未启用';
+      return false;
+    }
+  }
+
+  async function enableExperience() {
+    const soundStarted = await enableAudio();
+
     if (typeof DeviceOrientationEvent === 'undefined') {
-      gyroButton.textContent = '当前设备不支持';
+      gyroButton.textContent = soundStarted ? '声音已启用' : '当前设备不支持';
       return;
     }
 
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       const permission = await DeviceOrientationEvent.requestPermission();
       if (permission !== 'granted') {
-        gyroButton.textContent = '未授权';
+        gyroButton.textContent = soundStarted ? '声音已启用' : '未授权';
         return;
       }
     }
@@ -142,12 +182,12 @@
     targetX = term.width / 2;
     targetY = term.height / 2;
     window.addEventListener('deviceorientation', handleDeviceOrientation, true);
-    gyroButton.textContent = '陀螺仪已启用';
+    gyroButton.textContent = audio ? '陀螺仪与声音已启用' : '陀螺仪已启用';
   }
 
   stage.addEventListener('pointermove', (event) => setPointerFromClient(event.clientX, event.clientY));
   stage.addEventListener('pointerdown', (event) => setPointerFromClient(event.clientX, event.clientY));
-  gyroButton.addEventListener('click', enableGyro);
+  gyroButton.addEventListener('click', enableExperience);
 
   draw();
 })();
